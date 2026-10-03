@@ -1,0 +1,6 @@
+node_modules/
+.env
+evidencias/logs/
+evidencias/resultado.json
+evidencias/junit.xml
+evidencias/observaciones.json

@@ -1,0 +1,74 @@
+[
+  {
+    "id": "CP-01", "nombre": "Pedido exitoso", "tipo": "Integración", "riesgo": "R6",
+    "objetivo": "Validar que Pedidos reserve stock en Inventario y confirme el pedido cuando la integración funciona.",
+    "componentes": "Pedidos, Inventario",
+    "precondiciones": "Ambos servicios activos; P001 con stock 10.",
+    "datos": "{\"producto_id\":\"P001\",\"cantidad\":2}",
+    "procedimiento": "1) POST /pedidos en Pedidos. 2) Revisar código y cuerpo. 3) GET /productos/P001 en Inventario.",
+    "esperado": "201, estado CONFIRMADO y stock de P001 = 8."
+  },
+  {
+    "id": "CP-02", "nombre": "Cantidad inválida", "tipo": "Integración", "riesgo": "R1, R6",
+    "objetivo": "Validar que Pedidos rechace datos inválidos antes de llamar a Inventario.",
+    "componentes": "Pedidos, Inventario (no debe ser llamado)",
+    "precondiciones": "Ambos servicios activos; P001 con stock 10; contador de reservas en 0.",
+    "datos": "{\"producto_id\":\"P001\",\"cantidad\":-5}",
+    "procedimiento": "1) POST /pedidos. 2) Revisar el 400 y su detalle. 3) GET /admin/estadisticas en Inventario. 4) GET /productos/P001.",
+    "esperado": "400 VALIDACION; Inventario recibió 0 reservas; stock sin cambios."
+  },
+  {
+    "id": "CP-03", "nombre": "Producto inexistente", "tipo": "Integración", "riesgo": "R2",
+    "objetivo": "Validar que Pedidos propague el 404 de Inventario y no cree pedido.",
+    "componentes": "Pedidos, Inventario",
+    "precondiciones": "Ambos servicios activos; el producto X999 no existe.",
+    "datos": "{\"producto_id\":\"X999\",\"cantidad\":1}",
+    "procedimiento": "1) POST /pedidos. 2) Revisar código. 3) GET /pedidos/1.",
+    "esperado": "404 PRODUCTO_NO_EXISTE; GET /pedidos/1 devuelve 404."
+  },
+  {
+    "id": "CP-04", "nombre": "Stock insuficiente", "tipo": "Integración", "riesgo": "R3",
+    "objetivo": "Validar que un conflicto de stock se traduzca en 409 y no se cree el pedido.",
+    "componentes": "Pedidos, Inventario",
+    "precondiciones": "Ambos servicios activos; P002 con stock 3.",
+    "datos": "{\"producto_id\":\"P002\",\"cantidad\":999}",
+    "procedimiento": "1) POST /pedidos. 2) Revisar 409 y detalle. 3) GET /productos/P002. 4) GET /pedidos/1.",
+    "esperado": "409 STOCK_INSUFICIENTE (disponible 3); stock intacto; sin pedido."
+  },
+  {
+    "id": "CP-05", "nombre": "Inventario caído (falla técnica real)", "tipo": "Integración", "riesgo": "R4",
+    "objetivo": "Validar que Pedidos responda de forma controlada, sin colgarse ni dejar pedidos incompletos, cuando Inventario no está disponible.",
+    "componentes": "Pedidos, Inventario (apagado)",
+    "precondiciones": "Ambos servicios iniciados; luego el proceso de Inventario se detiene.",
+    "datos": "{\"producto_id\":\"P001\",\"cantidad\":1}",
+    "procedimiento": "1) Apagar Inventario (Ctrl+C o kill). 2) POST /pedidos. 3) GET /health de Pedidos. 4) GET /health/dependencias. 5) GET /pedidos/1.",
+    "esperado": "503 INVENTARIO_NO_DISPONIBLE con mensaje 'Inventario no está disponible'; /health de Pedidos en 200; sin pedido."
+  },
+  {
+    "id": "CP-06", "nombre": "Inventario lento (timeout)", "tipo": "Integración", "riesgo": "R5",
+    "objetivo": "Validar que Pedidos corte la espera a los 2 s y responda 504 en lugar de quedarse colgado.",
+    "componentes": "Pedidos, Inventario (demora simulada)",
+    "precondiciones": "Ambos servicios activos; POST /admin/demora {segundos:5} en Inventario.",
+    "datos": "{\"producto_id\":\"P001\",\"cantidad\":1}",
+    "procedimiento": "1) Configurar la demora. 2) POST /pedidos y medir el tiempo. 3) Quitar la demora.",
+    "esperado": "504 INVENTARIO_TIMEOUT en ~2 s (menos de 4.5 s)."
+  },
+  {
+    "id": "CP-07", "nombre": "Flujo completo de pedido", "tipo": "Sistema", "riesgo": "R6",
+    "objetivo": "Validar el recorrido completo: crear el pedido, consultarlo y comprobar que el stock bajó.",
+    "componentes": "Pedidos, Inventario",
+    "precondiciones": "Ambos servicios activos; P002 con stock 3.",
+    "datos": "{\"producto_id\":\"P002\",\"cantidad\":1}",
+    "procedimiento": "1) POST /pedidos. 2) GET /pedidos/{id}. 3) GET /productos/P002.",
+    "esperado": "Pedido consultable como CONFIRMADO y stock de P002 = 2."
+  },
+  {
+    "id": "CP-08", "nombre": "Inventario responde error 500", "tipo": "Integración", "riesgo": "R4, R6",
+    "objetivo": "Validar que una respuesta inesperada de Inventario se traduzca en 502 y no se cree pedido.",
+    "componentes": "Pedidos, Inventario (falla simulada)",
+    "precondiciones": "Ambos servicios activos; POST /admin/falla {activa:true} en Inventario.",
+    "datos": "{\"producto_id\":\"P001\",\"cantidad\":1}",
+    "procedimiento": "1) Activar la falla. 2) POST /pedidos. 3) GET /pedidos/1. 4) Desactivar la falla.",
+    "esperado": "502 INVENTARIO_RESPUESTA_INESPERADA; sin pedido."
+  }
+]

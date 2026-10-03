@@ -1,0 +1,35 @@
+{
+  "name": "laboratorio-microservicios-rest",
+  "version": "1.0.0",
+  "description": "Laboratorio de pruebas de integración entre microservicios REST (Pedidos <-> Inventario) con Node.js",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start:inventario": "node services/inventario/src/server.js",
+    "start:pedidos": "node services/pedidos/src/server.js",
+    "start": "concurrently -n inventario,pedidos -c cyan,green \"npm:start:inventario\" \"npm:start:pedidos\"",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:componente": "vitest run tests/component",
+    "test:integracion": "vitest run tests/integration",
+    "evidencia": "node scripts/evidencia.js",
+    "informe": "node scripts/informe.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "helmet": "^8.0.0",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "pino-pretty": "^11.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "supertest": "^7.0.0",
+    "vitest": "^2.1.4"
+  }
+}

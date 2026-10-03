@@ -1,0 +1,68 @@
+### Requiere la extensión "REST Client" de VS Code (humao.rest-client).
+### Antes: npm start   (levanta Inventario en 8002 y Pedidos en 8001)
+
+@pedidos = http://localhost:8001
+@inventario = http://localhost:8002
+
+### 0. Salud de ambos servicios y de la dependencia
+GET {{pedidos}}/health/dependencias
+
+### 1. Stock inicial de P001 (10)
+GET {{inventario}}/productos/P001
+
+### 2. CP-01: pedido exitoso (201)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "P001", "cantidad": 2 }
+
+### 3. El stock debe ser 8
+GET {{inventario}}/productos/P001
+
+### 4. CP-02: cantidad inválida (400)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "P001", "cantidad": -5 }
+
+### 5. Prueba de que Inventario NO fue llamado en el paso 4 (solo cuenta el paso 2)
+GET {{inventario}}/admin/estadisticas
+
+### 6. CP-03: producto inexistente (404)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "X999", "cantidad": 1 }
+
+### 7. CP-04: stock insuficiente (409)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "P002", "cantidad": 999 }
+
+### 8. CP-06: simular lentitud en Inventario (5 s) y crear pedido (504 a los 2 s)
+POST {{inventario}}/admin/demora
+Content-Type: application/json
+
+{ "segundos": 5 }
+
+###
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "P001", "cantidad": 1 }
+
+### Quitar la demora
+POST {{inventario}}/admin/demora
+Content-Type: application/json
+
+{ "segundos": 0 }
+
+### 9. CP-05: apague Inventario con Ctrl+C en su terminal y ejecute (503)
+POST {{pedidos}}/pedidos
+Content-Type: application/json
+
+{ "producto_id": "P001", "cantidad": 1 }
+
+### 10. Pedidos sigue vivo, pero reporta la dependencia caída
+GET {{pedidos}}/health/dependencias
