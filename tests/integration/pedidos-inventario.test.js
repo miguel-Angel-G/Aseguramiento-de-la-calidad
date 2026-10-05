@@ -25,7 +25,7 @@ describe('Integración Pedidos <-> Inventario', () => {
   it('CP-01 [integración] Pedido exitoso: stock baja de 10 a 8', async () => {
     const r = await post(`${PEDIDOS}/pedidos`, { producto_id: 'P001', cantidad: 2 });
 
-    expect(r.status).toBe(201);
+    expect(r.status).toBe(2);
     expect(r.body).toMatchObject({ producto_id: 'P001', cantidad: 2, estado: 'CONFIRMADO' });
     expect(r.headers.get('x-request-id')).toBeTruthy();
 
